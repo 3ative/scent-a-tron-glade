@@ -1,0 +1,147 @@
+substitutions:
+  # Room Name used for Button and Timer Titles (Capitals Allowed)
+  room: Lounge
+
+  # Timing Intervals: Adjust to suit your Need/Situation.
+  # NOTE: Values MUST BE in "quotes"
+  interval1: "5"
+  interval2: "15"
+  interval3: "30"
+  interval4: "60"
+  interval5: "120"
+  # Plunger Pulse Duration. Range: 55-150
+  squirt_pulse: "100ms"
+  # Cannister Squirt Capacity
+  maxSquirts: "2500"
+
+###############################################
+############ Generic D1 Mini Setup ############
+esphome:
+  name: "scent-a-tron-lounge"
+  platform: ESP8266
+  board: d1_mini
+  esp8266_restore_from_flash: true
+
+logger:
+  logs:
+    binary_sensor: NONE
+    sensor: NONE
+    switch: NONE
+    component: NONE
+api:
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+#############################################
+#############################################
+
+globals:
+  # Store the Cannister Percentage
+  - id: squirts
+    type: float
+    restore_value: yes
+
+  # Timer for Hold Button Reset
+  - id: press_duration
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+binary_sensor:
+  # Unit's Top Button for local Manual "Squirts" and Resetting Cannister Percentage
+  - platform: gpio
+    name: Scent-a-Tron $room Button
+    disabled_by_default: true
+    pin:
+      number: D3
+      inverted: True
+    on_press:
+      then:
+        - lambda: |-
+            id(press_duration) = millis();
+    on_release:
+      then:
+        - lambda: |-
+            if (millis() - id(press_duration) < 3000) {
+            ESP_LOGD("Scent-a-Tron", "The Button Was Pressed!");
+            id(theSquirter).turn_on();
+            } else {
+            ESP_LOGD("Scent-a-Tron", "Can Percentage RESET");
+            id(squirts) = 0;
+            id(can_level).publish_state(100);
+            global_preferences->sync();
+            }
+    
+select:
+  # Drop-Down Menu, "Select" in Home Assistant for Interval Automation
+  - platform: template
+    id: intervalSelect
+    name: Scent-a-Tron $room Interval
+    icon: mdi:timer-outline
+    optimistic: true
+    restore_value: true
+    options:
+      - "Off"
+      - $interval1 Minutes
+      - $interval2 Minutes
+      - $interval3 Minutes
+      - $interval4 Minutes
+      - $interval5 Minutes
+    on_value:
+      then:
+        - script.execute: squirtTimer
+
+script:
+  # Script for Auto squirt
+  - id: squirtTimer
+    mode: restart
+    then:
+      - while:
+          condition:
+            lambda: 'return id(intervalSelect).state != "Off";'
+          then:
+            - delay: !lambda 'return atoi(id(intervalSelect).state.c_str()) * 1000;' # For testing. Default 60000
+            # Fire off a Squirt
+            - switch.turn_on: theSquirter
+
+switch:
+  # The Glade DC Motor
+  - platform: gpio
+    name: Scent-a-Tron $room Squirt
+    id: theSquirter
+    icon: mdi:spray
+    pin:
+      number: D8
+    on_turn_on:
+      then:
+        - delay: $squirt_pulse
+        - switch.turn_off: theSquirter
+        - lambda: |-
+            id(squirts) += 1;
+            id(can_level).publish_state( (($maxSquirts-id(squirts))/$maxSquirts) * 100 );
+            ESP_LOGD("Scent-a-Tron", "I Squirted!");
+            global_preferences->sync();
+
+sensor:
+  # Cannister Percentage
+  - platform: template
+    id: can_level
+    name: Scent-a-Tron $room Can
+    device_class: volume
+    unit_of_measurement: "Can"
+    update_interval: $interval1 min
+    lambda: |-
+      return (($maxSquirts-id(squirts))/$maxSquirts) * 100;
+
+  # Optional WiFi Strength Monitor
+  - platform: wifi_signal
+    name: Scent-a-Tron $room Strength
+    update_interval: 60s
+
+status_led:
+  pin:
+    number: D4
+    inverted: yes
