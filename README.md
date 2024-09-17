@@ -1,6 +1,6 @@
 # Scent-A-Tron Glade
 
-Fresh-O-Matic V2 "Scent-A-Tron Glade". Check out the 🎬[YouTube tutorial](https://youtu.be/1f2tuS_PxIE) for setting up and options available.
+Fresh-O-Matic V2 "Scent-A-Tron Glade". Check out the 🎬[YouTube tutorial](https://youtu.be/gmUkuQgKljo) for setting up and options available.
 
 ___
 
