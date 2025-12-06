@@ -102,9 +102,9 @@ script:
     then:
       - while:
           condition:
-            lambda: 'return id(intervalSelect).state != "Off";'
+            lambda: 'return strcmp(id(intervalSelect).current_option(), "Off") != 0;'
           then:
-            - delay: !lambda 'return atoi(id(intervalSelect).state.c_str()) * 60000;' # For testing. Default 60000
+            - delay: !lambda 'return atoi(id(intervalSelect).current_option()) * 1000;' # For testing. Default 60000
             # Fire off a Squirt
             - switch.turn_on: theSquirter
 
