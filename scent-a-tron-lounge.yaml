@@ -10,7 +10,7 @@ substitutions:
   interval4: "60"
   interval5: "120"
   # Plunger Pulse Duration. Range: 55-150
-  squirt_pulse: "100ms"
+  squirt_pulse: "90ms"
   # Cannister Squirt Capacity
   maxSquirts: "2500"
 
@@ -18,6 +18,7 @@ substitutions:
 ############ Generic D1 Mini Setup ############
 esphome:
   name: "scent-a-tron-lounge"
+  friendly_name: Scene-a-Tron $room
 
 esp8266:
   board: d1_mini
@@ -36,6 +37,8 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  min_auth_mode: WPA2
+
 #############################################
 #############################################
 
@@ -54,7 +57,7 @@ globals:
 binary_sensor:
   # Unit's Top Button for local Manual "Squirts" and Resetting Cannister Percentage
   - platform: gpio
-    name: Scent-a-Tron $room Button
+    name: Button
     disabled_by_default: true
     pin:
       number: D3
@@ -80,7 +83,7 @@ select:
   # Drop-Down Menu, "Select" in Home Assistant for Interval Automation
   - platform: template
     id: intervalSelect
-    name: Scent-a-Tron $room Interval
+    name: Interval
     icon: mdi:timer-outline
     optimistic: true
     restore_value: true
@@ -102,16 +105,16 @@ script:
     then:
       - while:
           condition:
-            lambda: 'return strcmp(id(intervalSelect).current_option(), "Off") != 0;'
+            lambda: 'return id(intervalSelect).state != "Off";'
           then:
-            - delay: !lambda 'return atoi(id(intervalSelect).current_option()) * 1000;' # For testing. Default 60000
+            - delay: !lambda 'return atoi(id(intervalSelect).state.c_str()) * 60000;' # For testing. Default 60000
             # Fire off a Squirt
             - switch.turn_on: theSquirter
 
 switch:
   # The Glade DC Motor
   - platform: gpio
-    name: Scent-a-Tron $room Squirt
+    name: Squirt
     id: theSquirter
     icon: mdi:spray
     pin:
@@ -130,7 +133,7 @@ sensor:
   # Cannister Percentage
   - platform: template
     id: can_level
-    name: Scent-a-Tron $room Can
+    name: Can
     device_class: volume
     unit_of_measurement: "Can"
     update_interval: $interval1 min
@@ -139,7 +142,7 @@ sensor:
 
   # Optional WiFi Strength Monitor
   - platform: wifi_signal
-    name: Scent-a-Tron $room Strength
+    name: Strength
     update_interval: 60s
 
 status_led:
