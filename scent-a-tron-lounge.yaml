@@ -2,13 +2,14 @@ substitutions:
   # Room Name used for Button and Timer Titles (Capitals Allowed)
   room: Lounge
 
-  # Timing Intervals: Adjust to suit your Need/Situation.
+  # Timing Intervals: Adjust to suit your Need/Situation
   # NOTE: Values MUST BE in "quotes"
   interval1: "5"
   interval2: "15"
   interval3: "30"
   interval4: "60"
   interval5: "120"
+  interval6: "180"
   # Plunger Pulse Duration. Range: 55-150
   squirt_pulse: "90ms"
   # Cannister Squirt Capacity
@@ -94,6 +95,7 @@ select:
       - $interval3 Minutes
       - $interval4 Minutes
       - $interval5 Minutes
+      - $interval6 Minutes
     on_value:
       then:
         - script.execute: squirtTimer
@@ -107,7 +109,7 @@ script:
           condition:
             lambda: 'return id(intervalSelect).current_option() != "Off";'
           then:
-            - delay: !lambda 'return atoi(id(intervalSelect).current_option().c_str()) * 1000;' # For testing. Default 60000
+            - delay: !lambda 'return atoi(id(intervalSelect).current_option().c_str()) * 60000;' # For testing. Default 60000
             # Fire off a Squirt
             - switch.turn_on: theSquirter
 
